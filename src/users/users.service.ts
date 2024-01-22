@@ -3,8 +3,9 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { httpException } from 'src/helpers/exceptions/http_exception';
+import { formatUserMultiple } from 'src/helpers/format-user';
 
 @Injectable()
 export class UsersService {
@@ -13,7 +14,7 @@ export class UsersService {
     private userRepo: Repository<UserEntity>,
   ) { }
 
-  async create(input: [number, string, string, number]): Promise<UserEntity | any> {
+  async create(input: [number, string, string, number], queryRunner: QueryRunner): Promise<UserEntity | any> {
     const user = new CreateUserDto();
 
     try {
@@ -22,33 +23,33 @@ export class UsersService {
       user.City = input[2];
       user.Friend = input[3];
 
-      return this.userRepo
-        .save(user)
-        .catch((e) => httpException(e));
+      return queryRunner.manager.getRepository(UserEntity).save(user);
     } catch (error) {
+      console.log('create', error);
+
       throw error;
     }
   }
 
   async createMultiple(arrInput: []) {
-    console.log('createMultiple', arrInput);
-
     const queryRunner = this.userRepo.manager.connection.createQueryRunner();
     queryRunner.startTransaction();
 
     try {
       for (const input of arrInput) {
-        await this.create(input);
+        await this.create(input, queryRunner);
       }
+
       queryRunner.commitTransaction();
       return true;
     } catch (error) {
+      console.log('createMultiple', error);
       queryRunner.rollbackTransaction();
       const state = await this.findAll();
-
+      const formattedState = formatUserMultiple(state);
       return {
         status: 'error',
-        dbState: state
+        dbState: formattedState
       }
     }
   }

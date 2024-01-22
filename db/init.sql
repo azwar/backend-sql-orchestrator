@@ -1,1 +1,1 @@
-CREATE DATABASE IF NOT EXISTS sales-soldier;
+CREATE DATABASE IF NOT EXISTS tech_chalange;

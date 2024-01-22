@@ -13,6 +13,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InputCommand } from './dto/input-command.dto';
+import { formatUserMultiple } from 'src/helpers/format-user';
 
 @Controller('user')
 export class UsersController {
@@ -35,9 +36,10 @@ export class UsersController {
 
         if (res === true) {
           const state = await this.usersService.findAll();
+          const formattedState = formatUserMultiple(state);
           return {
             status: "ok",
-            dbState: state,
+            dbState: formattedState,
           }
         }
 
