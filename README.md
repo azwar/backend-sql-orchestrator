@@ -71,3 +71,61 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+
+  
+# Here is how to test the code
+
+## 1. Run using docker compose
+
+    docker-compose up --build
+
+  There will be 2 images deployed. NestJS image and MySQL image.
+  The local port for NestJS is: 6868
+
+## 2. Run the test using curl
+
+### add 1 user (NO ERROR, NO REVERT)
+
+    curl -X POST https://localhost:8000/user/addMultiple\
+    -H 'Content-Type: application/json'\
+    -d '{"type":"my_login","cmd_chain":[{"type":"insert","data": [1, "tom", "France", null]}]}'
+
+
+return_object = {
+  status: "ok", # status 200
+  dbState: ["(1, 'tom', 'France', null)"]
+}
+
+### add same user (RETURN ERROR CODE, REVERT CHANGE)
+
+    curl -X POST https://localhost:8000/user/addMultiple\
+    -H 'Content-Type: application/json'\
+    -d '{"type":"my_login","cmd_chain":[{"type":"insert","data":[2, "frog", "France", null]},{"type":"insert","cmd":[1, "sammy", "France", null] }]}'
+
+return_object = {
+  status: "error", # status 400
+  dbState: ["(1, 'tom', 'France', null)"]
+}
+
+# add 2 users synchronously (NO ERROR, NO REVERT)
+
+    curl -X POST https://localhost:8000/user/addMultiple\
+    -H 'Content-Type: application/json'\
+    -d '{"type":"my_login","cmd_chain":[{"type":"insert","cmd":[2, "frog", "France", null]},{"type":"insert","cmd":[3, "sam", "England", 1] }]}'
+
+return_object = {
+  status: "ok", # status 200
+  dbState: ["(1, 'tom', 'France', null)", "(2, 'frog', 'France', null)", "(3, 'sam', 'Engl
+and', 1)"] }
+
+### Invalid Foreign Key error thrown by DB (RETURN ERROR CODE, REVERT CHANGE)
+
+    curl -X POST https://localhost:8000/user/addMultiple\
+    -H 'Content-Type: application/json'\
+    -d '{"type":"my_login","cmd_chain":[{"type":"insert","cmd":[4, "croak", "Malaysia", null]},{"type":"insert","cmd":[5, "ding", "Finland", 100] }]}'
+
+return_object = {
+  status: "error", # status 400
+  dbState: ["(1, 'tom', 'France', null)", "(2, 'frog', 'France', null)", "(3, 'sam', 'Engl
+and', 1)"] }
